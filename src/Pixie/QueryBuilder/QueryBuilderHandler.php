@@ -88,7 +88,7 @@ class QueryBuilderHandler
         // Query builder adapter instance
         $this->adapterInstance = $this->container->build(
             '\\Pixie\\QueryBuilder\\Adapters\\' . ucfirst($this->adapter),
-            array($this->connection)
+            [$this->connection]
         );
 
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -151,7 +151,7 @@ class QueryBuilderHandler
      *
      * @return array PDOStatement and execution time as float
      */
-    public function statement($sql, $bindings = array())
+    public function statement(string $sql, array $bindings = [])
     {
         $start = microtime(true);
         $pdoStatement = $this->pdo->prepare($sql);
@@ -163,7 +163,8 @@ class QueryBuilderHandler
             );
         }
         $pdoStatement->execute();
-        return array($pdoStatement, microtime(true) - $start);
+
+        return [$pdoStatement, microtime(true) - $start];
     }
 
     /**

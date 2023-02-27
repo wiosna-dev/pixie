@@ -1,24 +1,27 @@
-<?php namespace Pixie;
+<?php
+
+namespace Pixie\Tests;
 
 use PDO;
 use Mockery as m;
+use Pixie\Exception;
 use Pixie\QueryBuilder\QueryBuilderHandler;
 
-class QueryBuilder extends TestCase
+class QueryBuilderTest extends TestCase
 {
     /**
      * @var QueryBuilderHandler
      */
     protected $builder;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
         $this->builder = new QueryBuilderHandler($this->mockConnection);
     }
 
-    public function testRawQuery()
+    public function testRawQuery(): void
     {
         $query = 'select * from cb_my_table where id = ? and name = ?';
         $bindings = array(5, 'usman');
@@ -32,7 +35,7 @@ class QueryBuilder extends TestCase
         );
     }
 
-    public function testInsertQueryReturnsIdForInsert()
+    public function testInsertQueryReturnsIdForInsert(): void
     {
         $this->mockPdoStatement
             ->expects($this->once())
@@ -42,7 +45,7 @@ class QueryBuilder extends TestCase
         $this->mockPdo
             ->expects($this->once())
             ->method('lastInsertId')
-            ->will($this->returnValue(11));
+            ->will($this->returnValue('11'));
 
         $id = $this->builder->table('test')->insert(array(
             'id' => 5,
@@ -52,7 +55,7 @@ class QueryBuilder extends TestCase
         $this->assertEquals(11, $id);
     }
 
-    public function testInsertQueryReturnsIdForInsertIgnore()
+    public function testInsertQueryReturnsIdForInsertIgnore(): void
     {
         $this->mockPdoStatement
             ->expects($this->once())
@@ -62,7 +65,7 @@ class QueryBuilder extends TestCase
         $this->mockPdo
             ->expects($this->once())
             ->method('lastInsertId')
-            ->will($this->returnValue(11));
+            ->will($this->returnValue('11'));
 
         $id = $this->builder->table('test')->insertIgnore(array(
             'id' => 5,
@@ -72,7 +75,7 @@ class QueryBuilder extends TestCase
         $this->assertEquals(11, $id);
     }
 
-    public function testInsertQueryReturnsNullForIgnoredInsert()
+    public function testInsertQueryReturnsNullForIgnoredInsert(): void
     {
         $this->mockPdoStatement
             ->expects($this->once())
@@ -87,11 +90,11 @@ class QueryBuilder extends TestCase
         $this->assertEquals(null, $id);
     }
 
-    /**
-     * @expectedException \Pixie\Exception
-     * @expectedExceptionCode 3
-     */
-    public function testTableNotSpecifiedException(){
+    public function testTableNotSpecifiedException(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionCode(3);
+
         $this->builder->where('a', 'b')->get();
     }
 }

@@ -1,25 +1,28 @@
-<?php namespace Pixie;
+<?php
+
+namespace Pixie\Tests;
 
 use Pixie\QueryBuilder\QueryBuilderHandler;
 
-class QueryBuilderTest extends TestCase
+class QueryBuilderBehaviorTest extends TestCase
 {
-    private $builder;
+    private QueryBuilderHandler $builder;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
-        $this->builder = new QueryBuilder\QueryBuilderHandler($this->mockConnection);
+        $this->builder = new QueryBuilderHandler($this->mockConnection);
     }
 
     public function testSelectFlexibility()
     {
         $query = $this->builder
             ->select('foo')
-            ->select(array('bar', 'baz'))
+            ->select(['bar', 'baz'])
             ->select('qux', 'lol', 'wut')
             ->from('t');
+
         $this->assertEquals(
             'SELECT `foo`, `bar`, `baz`, `qux`, `lol`, `wut` FROM `cb_t`',
             $query->getQuery()->getRawSql(),
@@ -27,18 +30,18 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testSelectQuery()
+    public function testSelectQuery(): void
     {
         $subQuery = $this->builder->table('person_details')->select('details')->where('person_id', '=', 3);
 
         $query = $this->builder->table('my_table')
             ->select('my_table.*')
-            ->select(array($this->builder->raw('count(cb_my_table.id) as tot'), $this->builder->subQuery($subQuery, 'pop')))
+            ->select([$this->builder->raw('count(cb_my_table.id) as tot'), $this->builder->subQuery($subQuery, 'pop')])
             ->where('value', '=', 'Ifrah')
             ->whereNot('my_table.id', -1)
             ->orWhereNot('my_table.id', -2)
-            ->orWhereIn('my_table.id', array(1, 2))
-            ->groupBy(array('value', 'my_table.id', 'person_details.id'))
+            ->orWhereIn('my_table.id', [1, 2])
+            ->groupBy(['value', 'my_table.id', 'person_details.id'])
             ->orderBy('my_table.id', 'DESC')
             ->orderBy('value')
             ->having('tot', '<', 2)
@@ -57,7 +60,7 @@ class QueryBuilderTest extends TestCase
             , $nestedQuery->getQuery()->getRawSql());
     }
 
-    public function testSelectAliases()
+    public function testSelectAliases(): void
     {
         $query = $this->builder->from('my_table')->select('foo')->select(array('bar' => 'baz', 'qux'));
 
@@ -67,13 +70,13 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testRawStatementsWithinCriteria()
+    public function testRawStatementsWithinCriteria(): void
     {
         $query = $this->builder->from('my_table')
             ->where('simple', 'criteria')
             ->where($this->builder->raw('RAW'))
             ->where($this->builder->raw('PARAMETERIZED_ONE(?)', 'foo'))
-            ->where($this->builder->raw('PARAMETERIZED_SEVERAL(?, ?, ?)', array(1, '2', 'foo')));
+            ->where($this->builder->raw('PARAMETERIZED_SEVERAL(?, ?, ?)', [1, '2', 'foo']));
 
         $this->assertEquals(
             "SELECT * FROM `cb_my_table` WHERE `simple` = 'criteria' AND RAW AND PARAMETERIZED_ONE('foo') AND PARAMETERIZED_SEVERAL(1, '2', 'foo')",
@@ -81,31 +84,31 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testStandaloneWhereNot()
+    public function testStandaloneWhereNot(): void
     {
         $query = $this->builder->table('my_table')->whereNot('foo', 1);
         $this->assertEquals("SELECT * FROM `cb_my_table` WHERE NOT `foo` = 1", $query->getQuery()->getRawSql());
     }
 
-    public function testSelectDistinct()
+    public function testSelectDistinct(): void
     {
-        $query = $this->builder->selectDistinct(array('name', 'surname'))->from('my_table');
+        $query = $this->builder->selectDistinct(['name', 'surname'])->from('my_table');
         $this->assertEquals("SELECT DISTINCT `name`, `surname` FROM `cb_my_table`", $query->getQuery()->getRawSql());
     }
 
-    public function testSelectDistinctWithSingleColumn()
+    public function testSelectDistinctWithSingleColumn(): void
     {
         $query = $this->builder->selectDistinct('name')->from('my_table');
         $this->assertEquals("SELECT DISTINCT `name` FROM `cb_my_table`", $query->getQuery()->getRawSql());
     }
 
-    public function testSelectDistinctAndSelectCalls()
+    public function testSelectDistinctAndSelectCalls(): void
     {
         $query = $this->builder->select('name')->selectDistinct('surname')->select(array('birthday', 'address'))->from('my_table');
         $this->assertEquals("SELECT DISTINCT `name`, `surname`, `birthday`, `address` FROM `cb_my_table`", $query->getQuery()->getRawSql());
     }
 
-    public function testSelectQueryWithNestedCriteriaAndJoins()
+    public function testSelectQueryWithNestedCriteriaAndJoins(): void
     {
         $builder = $this->builder;
 
@@ -135,13 +138,13 @@ class QueryBuilderTest extends TestCase
             , $query->getQuery()->getRawSql());
     }
 
-    public function testSelectWithQueryEvents()
+    public function testSelectWithQueryEvents(): void
     {
         $builder = $this->builder;
 
         $builder->registerEvent('before-select', ':any', function($qb)
         {
-            $qb->whereIn('status', array(1, 2));
+            $qb->whereIn('status', [1, 2]);
         });
 
         $query = $builder->table('some_table')->where('name', 'Some');
@@ -151,7 +154,7 @@ class QueryBuilderTest extends TestCase
         $this->assertEquals("SELECT * FROM `cb_some_table` WHERE `name` = 'Some' AND `status` IN (1, 2)", $actual);
     }
 
-    public function testEventPropagation()
+    public function testEventPropagation(): void
     {
         $builder = $this->builder;
         $counter = 0;
@@ -181,7 +184,7 @@ class QueryBuilderTest extends TestCase
         $this->assertEquals(4, $counter, 'after-delete was not called');
     }
 
-    public function testInsertQuery()
+    public function testInsertQuery(): void
     {
         $builder = $this->builder->from('my_table');
         $data = array('key' => 'Name',
@@ -191,7 +194,7 @@ class QueryBuilderTest extends TestCase
             , $builder->getQuery('insert', $data)->getRawSql());
     }
 
-    public function testInsertIgnoreQuery()
+    public function testInsertIgnoreQuery(): void
     {
         $builder = $this->builder->from('my_table');
         $data = array('key' => 'Name',
@@ -201,7 +204,7 @@ class QueryBuilderTest extends TestCase
             , $builder->getQuery('insertignore', $data)->getRawSql());
     }
 
-    public function testReplaceQuery()
+    public function testReplaceQuery(): void
     {
         $builder = $this->builder->from('my_table');
         $data = array('key' => 'Name',
@@ -211,7 +214,7 @@ class QueryBuilderTest extends TestCase
             , $builder->getQuery('replace', $data)->getRawSql());
     }
 
-    public function testInsertOnDuplicateKeyUpdateQuery()
+    public function testInsertOnDuplicateKeyUpdateQuery(): void
     {
         $builder = $this->builder;
         $data = array(
@@ -227,7 +230,7 @@ class QueryBuilderTest extends TestCase
             , $builder->getQuery('insert', $data)->getRawSql());
     }
 
-    public function testUpdateQuery()
+    public function testUpdateQuery(): void
     {
         $builder = $this->builder->table('my_table')->where('value', 'Sana');
 
@@ -240,9 +243,9 @@ class QueryBuilderTest extends TestCase
             , $builder->getQuery('update', $data)->getRawSql());
     }
 
-    public function testDeleteQuery()
+    public function testDeleteQuery(): void
     {
-        $this->builder = new QueryBuilder\QueryBuilderHandler($this->mockConnection);
+        $this->builder = new QueryBuilderHandler($this->mockConnection);
 
         $builder = $this->builder->table('my_table')->where('value', '=', 'Amrin');
 
@@ -250,7 +253,7 @@ class QueryBuilderTest extends TestCase
             , $builder->getQuery('delete')->getRawSql());
     }
 
-    public function testOrderByFlexibility()
+    public function testOrderByFlexibility(): void
     {
         $query = $this->builder
             ->from('t')
@@ -265,7 +268,7 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testSelectQueryWithNull()
+    public function testSelectQueryWithNull(): void
     {
         $query = $this->builder->from('my_table')
                 ->whereNull('key1')
@@ -279,7 +282,7 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testIsPossibleToUseSubqueryInWhereClause()
+    public function testIsPossibleToUseSubqueryInWhereClause(): void
     {
         $sub = clone $this->builder;
         $query = $this->builder->from('my_table')->whereIn('foo', $this->builder->subQuery(
@@ -291,7 +294,7 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testIsPossibleToUseSubqueryInWhereNotClause()
+    public function testIsPossibleToUseSubqueryInWhereNotClause(): void
     {
         $sub = clone $this->builder;
         $query = $this->builder->from('my_table')->whereNotIn('foo', $this->builder->subQuery(
@@ -303,14 +306,15 @@ class QueryBuilderTest extends TestCase
         );
     }
 
-    public function testYouCanSetFetchModeFromConstructorAsOptionalParameter()
+    public function testYouCanSetFetchModeFromConstructorAsOptionalParameter(): void
     {
         $selectedFetchMode = \PDO::FETCH_ASSOC;
         $builder = new QueryBuilderHandler($this->mockConnection, $selectedFetchMode);
         $this->assertEquals($selectedFetchMode, $builder->getFetchMode());
     }
 
-    public function testFetchModeSelectedWillBeMaintainedBetweenInstances(){
+    public function testFetchModeSelectedWillBeMaintainedBetweenInstances(): void
+    {
         $selectedFetchMode = \PDO::FETCH_ASSOC;
         $builder = new QueryBuilderHandler($this->mockConnection, $selectedFetchMode);
         $newBuilder = $builder->table('stuff');
