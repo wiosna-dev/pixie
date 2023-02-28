@@ -235,10 +235,8 @@ class QueryBuilderHandler
 
     /**
      * Get count of rows
-     *
-     * @return int
      */
-    public function count()
+    public function count(): int
     {
         // Get the current statements
         $originalStatements = $this->statements;
@@ -253,12 +251,7 @@ class QueryBuilderHandler
         return $count;
     }
 
-    /**
-     * @param $type
-     *
-     * @return int
-     */
-    protected function aggregate($type)
+    protected function aggregate(string $type): int
     {
         // Get the current selects
         $mainSelects = isset($this->statements['selects']) ? $this->statements['selects'] : null;
