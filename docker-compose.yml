@@ -1,0 +1,14 @@
+version: '3'
+services:
+    php8x-cli:
+        image: php-8x-pixie:latest
+#        build: ./docker/php
+        entrypoint: bash
+        volumes:
+            - .:/var/www
+        networks:
+            - wiosna_dev_net
+networks:
+    wiosna_dev_net:
+        external:
+            name: wiosna_dev_net

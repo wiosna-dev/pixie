@@ -8,11 +8,14 @@
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true"
          processIsolation="false"
-         stopOnFailure="false"
-         syntaxCheck="false">
+         stopOnFailure="false">
     <testsuites>
         <testsuite name="Pixie Test Suite">
-            <directory>tests/Pixie/</directory>
+            <directory>tests</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <!-- E_ALL & ~E_DEPRECATED = 24575 -->
+        <ini name="error_reporting" value="-1"/>
+    </php>
 </phpunit>

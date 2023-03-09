@@ -1,32 +1,43 @@
-<?php namespace Pixie;
+<?php
+
+namespace Pixie\Tests;
 
 use Mockery as m;
+use PDO;
+use PDOStatement;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase as BaseTestCase;
+use Pixie\Connection;
+use Pixie\EventHandler;
 use Viocon\Container;
 
-class TestCase extends \PHPUnit_Framework_TestCase {
+class TestCase extends BaseTestCase
+{
     /**
      * @var Container
      */
-    protected $container;
+    protected Container $container;
     protected $mockConnection;
-    protected $mockPdo;
-    protected $mockPdoStatement;
+    protected \PDO|MockObject $mockPdo;
+    protected PDOStatement|MockObject $mockPdoStatement;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->container = new Container();
 
-        $this->mockPdoStatement = $this->getMock('\\PDOStatement');
+        $this->mockPdoStatement = $this->createMock(MockPDOStatement::class);
 
-        $mockPdoStatement = & $this->mockPdoStatement;
+        $mockPdoStatement = $this->mockPdoStatement;
 
-        $mockPdoStatement->bindings = array();
+        $mockPdoStatement->bindings = [];
 
         $this->mockPdoStatement
             ->expects($this->any())
             ->method('bindValue')
             ->will($this->returnCallback(function ($parameter, $value, $dataType) use ($mockPdoStatement) {
-                $mockPdoStatement->bindings[] = array($value, $dataType);
+                $mockPdoStatement->bindings[] = [$value, $dataType];
+
+                return true;
             }));
 
         $this->mockPdoStatement
@@ -36,23 +47,27 @@ class TestCase extends \PHPUnit_Framework_TestCase {
                 if ($bindings) {
                     $mockPdoStatement->bindings = $bindings;
                 }
+
+                return true;
             }));
 
 
         $this->mockPdoStatement
             ->expects($this->any())
             ->method('fetchAll')
-            ->will($this->returnCallback(function() use ($mockPdoStatement){
-                return array($mockPdoStatement->sql, $mockPdoStatement->bindings);
+            ->will($this->returnCallback(function() use ($mockPdoStatement) {
+                return [$mockPdoStatement->sql, $mockPdoStatement->bindings];
             }));
 
-        $this->mockPdo = $this->getMock('\\Pixie\\MockPdo', array('prepare', 'setAttribute', 'quote', 'lastInsertId'));
+//        $this->mockPdo = $this->getMock(PDO::class, array('prepare', 'setAttribute', 'quote', 'lastInsertId'));
+        $this->mockPdo = $this->createMock(PDO::class);
 
         $this->mockPdo
             ->expects($this->any())
             ->method('prepare')
-            ->will($this->returnCallback(function($sql) use ($mockPdoStatement){
+            ->will($this->returnCallback(function($sql) use ($mockPdoStatement) {
                 $mockPdoStatement->sql = $sql;
+
                 return $mockPdoStatement;
             }));
 
@@ -65,7 +80,7 @@ class TestCase extends \PHPUnit_Framework_TestCase {
 
         $eventHandler = new EventHandler();
 
-        $this->mockConnection = m::mock('\\Pixie\\Connection');
+        $this->mockConnection = m::mock(Connection::class);
         $this->mockConnection->shouldReceive('getPdoInstance')->andReturn($this->mockPdo);
         $this->mockConnection->shouldReceive('getAdapter')->andReturn('mysql');
         $this->mockConnection->shouldReceive('getAdapterConfig')->andReturn(array('prefix' => 'cb_'));
@@ -73,7 +88,7 @@ class TestCase extends \PHPUnit_Framework_TestCase {
         $this->mockConnection->shouldReceive('getEventHandler')->andReturn($eventHandler);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -81,14 +96,8 @@ class TestCase extends \PHPUnit_Framework_TestCase {
     public function callbackMock()
     {
         $args = func_get_args();
+
         return count($args) == 1 ? $args[0] : $args;
     }
 }
 
-class MockPdo extends \PDO
-{
-    public function __construct()
-    {
-
-    }
-}
