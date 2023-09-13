@@ -92,6 +92,7 @@ class QueryBuilderHandler
         );
 
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
     }
 
     /**
